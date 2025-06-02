@@ -108,4 +108,5 @@ elif modo == "Modo administradora":
     else:
         if clave:
             st.error("Clave incorrecta ❌")
-Actualización con vista administradora
+#Actualización con vista administradora
+
