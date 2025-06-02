@@ -19,7 +19,7 @@ st.title("Registro de Entregas")
 modo = st.radio("Selecciona el modo", ["Registrar entrega", "Ver mis entregas", "Modo administradora"])
 
 if modo == "Registrar entrega":
-    usuario = st.selectbox("Selecciona tu usuario", ["ISRA", "SAID", "GABO"])
+    usuario = st.selectbox("Selecciona tu usuario", ["ISRA", "SAID", "GABO","ALEX"])
     st.subheader("Nueva Entrega Múltiple")
 
     clientes = []
