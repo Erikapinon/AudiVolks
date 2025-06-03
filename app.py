@@ -17,9 +17,14 @@ if not os.path.exists(DB_FILE):
     df_init.to_csv(DB_FILE, index=False)
 
 # Cargar base existente
-df = pd.read_csv(DB_FILE)
-df["Hora de Salida"] = pd.to_datetime(df["Hora de Salida"])
-df["Hora de Llegada"] = pd.to_datetime(df["Hora de Llegada"])
+@st.cache_data(ttl=60)
+def cargar_datos():
+    df_local = pd.read_csv(DB_FILE)
+    df_local["Hora de Salida"] = pd.to_datetime(df_local["Hora de Salida"])
+    df_local["Hora de Llegada"] = pd.to_datetime(df_local["Hora de Llegada"])
+    return df_local
+
+df = cargar_datos()
 
 # --- INTERFAZ ---
 st.set_page_config(page_title="Registro de Entregas - Audivolks", page_icon="🚗")
@@ -57,6 +62,8 @@ if modo == "Registrar entrega":
             })
             nueva_fila.to_csv(DB_FILE, mode='a', header=False, index=False)
             st.success(f"Entrega {i+1} registrada correctamente ✅")
+            st.cache_data.clear()
+            st.experimental_rerun()
 
 elif modo == "Ver mis entregas":
     st.subheader(f"Entregas de {usuario}")
