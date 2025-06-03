@@ -7,6 +7,9 @@ import os
 import pytz
 from io import BytesIO
 
+# --- PRIMERO: CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Registro de Entregas - Audivolks", page_icon="🚗")
+
 # Zona horaria CST
 cst = pytz.timezone("America/Mexico_City")
 
@@ -27,7 +30,6 @@ def cargar_datos():
 df = cargar_datos()
 
 # --- INTERFAZ ---
-st.set_page_config(page_title="Registro de Entregas - Audivolks", page_icon="🚗")
 st.image("logo.jpg", width=250)
 
 st.title("Registro de Entregas")
