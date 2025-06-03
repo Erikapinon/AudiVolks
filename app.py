@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 import os
 import pytz
+from io import BytesIO
 
 # Zona horaria CST
 cst = pytz.timezone("America/Mexico_City")
@@ -26,7 +27,7 @@ st.image("logo.jpg", width=250)
 
 st.title("Registro de Entregas")
 usuario = st.selectbox("Selecciona tu usuario", ["ISRA", "SAID", "GABO", "ALEX"])
-modo = st.radio("¿Qué deseas hacer?", ["Registrar entrega", "Ver mis entregas", "Ver reporte diario", "Modo administradora"])
+modo = st.radio("¿Qué deseas hacer?", ["Registrar entrega", "Ver mis entregas", "Modo administradora"])
 
 if modo == "Registrar entrega":
     st.subheader("Nueva(s) Entrega(s)")
@@ -66,51 +67,6 @@ elif modo == "Ver mis entregas":
         total = entregas["Monto"].sum()
         st.info(f"Monto total entregado: ${total:,.2f}")
 
-elif modo == "Ver reporte diario":
-    st.subheader("Reporte Diario por Repartidor")
-    fecha_seleccionada = st.date_input("Selecciona una fecha", datetime.date.today())
-
-    df["Fecha"] = df["Hora de Salida"].dt.date
-    entregas_dia = df[df["Fecha"] == fecha_seleccionada]
-
-    if entregas_dia.empty:
-        st.warning("No hay entregas registradas en esa fecha.")
-    else:
-        resumen = entregas_dia.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
-        st.dataframe(resumen)
-
-        for usuario in resumen.index:
-            st.info(f"{usuario}: {resumen.loc[usuario, 'Entregas']} entregas - ${resumen.loc[usuario, 'Monto Total']:.2f}")
-
-        # Descargar como Excel
-        excel_buffer = entregas_dia.to_excel(index=False, engine='openpyxl')
-        st.download_button("📥 Descargar reporte diario en Excel", data=excel_buffer, file_name=f"reporte_diario_{fecha_seleccionada}.xlsx")
-
-        # Descargar como CSV para PDF
-        csv_buffer = entregas_dia.to_csv(index=False)
-        st.download_button("📥 Descargar reporte diario en CSV", data=csv_buffer, file_name=f"reporte_diario_{fecha_seleccionada}.csv")
-
-    # Reportes semanal y mensual
-    st.markdown("---")
-    st.subheader("🔁 Reporte Semanal y Mensual")
-    hoy = datetime.date.today()
-    df["Fecha"] = pd.to_datetime(df["Hora de Salida"]).dt.date
-
-    semana_actual = df[df["Fecha"] >= hoy - datetime.timedelta(days=7)]
-    mes_actual = df[df["Fecha"] >= hoy.replace(day=1)]
-
-    if not semana_actual.empty:
-        st.write("### Reporte Semanal")
-        resumen_semana = semana_actual.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
-        st.dataframe(resumen_semana)
-        st.download_button("📥 Descargar reporte semanal (Excel)", data=semana_actual.to_excel(index=False, engine='openpyxl'), file_name="reporte_semanal.xlsx")
-    
-    if not mes_actual.empty:
-        st.write("### Reporte Mensual")
-        resumen_mes = mes_actual.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
-        st.dataframe(resumen_mes)
-        st.download_button("📥 Descargar reporte mensual (Excel)", data=mes_actual.to_excel(index=False, engine='openpyxl'), file_name="reporte_mensual.xlsx")
-
 elif modo == "Modo administradora":
     clave = st.text_input("Introduce tu clave de acceso:", type="password")
     if clave == "admin123":
@@ -143,6 +99,54 @@ elif modo == "Modo administradora":
             st.markdown("---")
             st.markdown("### 🖨️ Imprimir Reporte")
             st.markdown("Presiona **Ctrl + P** (o usa el botón de imprimir del navegador) para guardar este reporte como PDF o imprimirlo.")
+
+            # --- Reporte Diario ---
+            st.markdown("---")
+            st.subheader("🗓️ Reporte Diario")
+            fecha_seleccionada = st.date_input("Selecciona una fecha", datetime.date.today())
+
+            df["Fecha"] = df["Hora de Salida"].dt.date
+            entregas_dia = df[df["Fecha"] == fecha_seleccionada]
+
+            if entregas_dia.empty:
+                st.warning("No hay entregas registradas en esa fecha.")
+            else:
+                resumen = entregas_dia.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
+                st.dataframe(resumen)
+
+                for usuario in resumen.index:
+                    st.info(f"{usuario}: {resumen.loc[usuario, 'Entregas']} entregas - ${resumen.loc[usuario, 'Monto Total']:.2f}")
+
+                # Descargar como Excel
+                buffer_excel = BytesIO()
+                entregas_dia.to_excel(buffer_excel, index=False, engine='openpyxl')
+                st.download_button("📥 Descargar reporte diario en Excel", data=buffer_excel.getvalue(), file_name=f"reporte_diario_{fecha_seleccionada}.xlsx")
+
+                # Descargar como CSV
+                csv_buffer = entregas_dia.to_csv(index=False).encode()
+                st.download_button("📥 Descargar reporte diario en CSV", data=csv_buffer, file_name=f"reporte_diario_{fecha_seleccionada}.csv")
+
+            # --- Reporte Semanal y Mensual ---
+            st.subheader("🔁 Reporte Semanal y Mensual")
+            hoy = datetime.date.today()
+            semana_actual = df[df["Fecha"] >= hoy - datetime.timedelta(days=7)]
+            mes_actual = df[df["Fecha"] >= hoy.replace(day=1)]
+
+            if not semana_actual.empty:
+                st.write("### Reporte Semanal")
+                resumen_semana = semana_actual.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
+                st.dataframe(resumen_semana)
+                buffer_excel = BytesIO()
+                semana_actual.to_excel(buffer_excel, index=False, engine='openpyxl')
+                st.download_button("📥 Descargar reporte semanal (Excel)", data=buffer_excel.getvalue(), file_name="reporte_semanal.xlsx")
+
+            if not mes_actual.empty:
+                st.write("### Reporte Mensual")
+                resumen_mes = mes_actual.groupby("Usuario")["Monto"].agg(["count", "sum"]).rename(columns={"count": "Entregas", "sum": "Monto Total"})
+                st.dataframe(resumen_mes)
+                buffer_excel = BytesIO()
+                mes_actual.to_excel(buffer_excel, index=False, engine='openpyxl')
+                st.download_button("📥 Descargar reporte mensual (Excel)", data=buffer_excel.getvalue(), file_name="reporte_mensual.xlsx")
     else:
         if clave:
             st.error("Clave incorrecta ❌")
