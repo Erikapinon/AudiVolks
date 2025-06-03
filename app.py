@@ -66,7 +66,7 @@ elif modo == "Ver mis entregas":
         total = entregas["Monto"].sum()
         st.info(f"Monto total entregado: ${total:,.2f}")
 
-elif modo == \"Ver reporte diario\":
+elif modo == "Ver reporte diario":
     st.subheader("Reporte Diario por Repartidor")
     fecha_seleccionada = st.date_input("Selecciona una fecha", datetime.date.today())
 
@@ -111,7 +111,7 @@ elif modo == \"Ver reporte diario\":
         st.dataframe(resumen_mes)
         st.download_button("📥 Descargar reporte mensual (Excel)", data=mes_actual.to_excel(index=False, engine='openpyxl'), file_name="reporte_mensual.xlsx")
 
-elif modo == \"Modo administradora\":
+elif modo == "Modo administradora":
     clave = st.text_input("Introduce tu clave de acceso:", type="password")
     if clave == "admin123":
         st.success("Acceso concedido ✅")
