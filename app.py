@@ -36,34 +36,46 @@ modo = st.radio("¿Qué deseas hacer?", ["Registrar entrega", "Ver mis entregas"
 
 if modo == "Registrar entrega":
     st.subheader("Nueva(s) Entrega(s)")
-    num_entregas = st.slider("¿Cuántas entregas quieres registrar?", 1, 5, 1)
+    clientes = []
+    tickets = []
+    montos = []
 
-    for i in range(num_entregas):
+    for i in range(5):
         st.markdown(f"### Entrega {i+1}")
         cliente = st.text_input(f"Cliente / Destino {i+1}", key=f"cliente_{i}")
         ticket = st.text_input(f"Número de ticket {i+1}", key=f"ticket_{i}")
         monto = st.number_input(f"Monto total {i+1}", min_value=0.0, format="%.2f", key=f"monto_{i}")
+        clientes.append(cliente)
+        tickets.append(ticket)
+        montos.append(monto)
 
-        if st.button(f"Iniciar entrega {i+1}", key=f"inicio_{i}"):
-            salida = datetime.datetime.now(cst)
-            st.session_state[f"salida_{i}"] = salida
-            st.success(f"Entrega {i+1} iniciada a las {salida.strftime('%H:%M:%S')}")
+    if st.button("Iniciar entrega"):
+        st.session_state["salida"] = datetime.datetime.now(cst)
+        st.success(f"Entrega iniciada a las {st.session_state['salida'].strftime('%H:%M:%S')}")
 
-        if st.button(f"Finalizar entrega {i+1}", key=f"fin_{i}"):
-            llegada = datetime.datetime.now(cst)
-            salida = st.session_state.get(f"salida_{i}", llegada)
-            nueva_fila = pd.DataFrame({
-                "Usuario": [usuario],
-                "Cliente": [cliente],
-                "Ticket": [ticket],
-                "Monto": [monto],
-                "Hora de Salida": [salida.strftime("%Y-%m-%d %H:%M:%S")],
-                "Hora de Llegada": [llegada.strftime("%Y-%m-%d %H:%M:%S")]
-            })
-            nueva_fila.to_csv(DB_FILE, mode='a', header=False, index=False)
-            st.success(f"Entrega {i+1} registrada correctamente ✅")
+    if st.button("Finalizar entrega"):
+        llegada = datetime.datetime.now(cst)
+        salida = st.session_state.get("salida", llegada)
+        filas = []
+        for i in range(5):
+            if clientes[i] and tickets[i] and montos[i] > 0:
+                fila = {
+                    "Usuario": usuario,
+                    "Cliente": clientes[i],
+                    "Ticket": tickets[i],
+                    "Monto": montos[i],
+                    "Hora de Salida": salida.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Hora de Llegada": llegada.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                filas.append(fila)
+        if filas:
+            df_nuevo = pd.DataFrame(filas)
+            df_nuevo.to_csv(DB_FILE, mode='a', header=False, index=False)
+            st.success("Entregas registradas correctamente ✅")
             st.cache_data.clear()
             st.experimental_rerun()
+        else:
+            st.warning("No hay entregas válidas para registrar.")
 
 elif modo == "Ver mis entregas":
     st.subheader(f"Entregas de {usuario}")
